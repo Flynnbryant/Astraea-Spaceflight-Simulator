@@ -16,11 +16,14 @@ class Entity():
         self.pos = np.array(pos)
         self.vel = np.array(vel)
         self.color = np.array(color)
+        self.colorsmall = self.color/255
         self.primary = primary
+        self.trace_detail = 2000
 
     # Wont be needed with metaclass instance iteration
     def remove(self, universe):
         universe.entities.remove(self)
+        universe.entitylength -= 1
         if self in universe.bodies:
             universe.bodies.remove(self)
         elif self in universe.vessels:
@@ -45,15 +48,15 @@ class Entity():
             self.long_ascending = 2*np.pi - self.long_ascending
 
     def calculate_trace(self):
-        x_translated = self.semi_major_axis * np.cos(2*np.pi * np.arange(0, 1, 1/self.trace_detail, dtype=np.float128)) - self.semi_major_axis + self.periapsis
-        y_translated = self.semi_minor_axis * np.sin(2*np.pi * np.arange(0, 1, 1/self.trace_detail, dtype=np.float128))
+        x_translated = self.semi_major_axis * np.cos(2*np.pi * np.arange(0, 1, 1/self.trace_detail, dtype=np.float32)) - self.semi_major_axis + self.periapsis
+        y_translated = self.semi_minor_axis * np.sin(2*np.pi * np.arange(0, 1, 1/self.trace_detail, dtype=np.float32))
         x_periapsis_rotation = x_translated * np.cos(self.arg_periapsis) - y_translated * np.sin(self.arg_periapsis)
         y_periapsis_rotation = x_translated * np.sin(self.arg_periapsis) + y_translated * np.cos(self.arg_periapsis)
         y_inclination_rotation = y_periapsis_rotation * np.cos(self.inclination)
         x_longitude_rotation = x_periapsis_rotation * np.cos(self.long_ascending) - y_inclination_rotation * np.sin(self.long_ascending)
         y_longitude_rotation = x_periapsis_rotation * np.sin(self.long_ascending) + y_inclination_rotation * np.cos(self.long_ascending)
 
-        self.points = np.zeros((3, self.trace_detail), dtype=np.float64)
+        self.points = np.zeros((3, self.trace_detail), dtype=np.float32)
         self.points[0] = x_longitude_rotation
         self.points[2] = y_longitude_rotation
         self.points[1] = y_periapsis_rotation * np.sin(self.inclination)
@@ -64,10 +67,18 @@ class Entity():
         self.points[2] + self.primary.pos[1]])).T
 
 class Vessel(Entity):
-    def __init__(self, name, pos, vel, color, deltav):
-        super().__init__(name, pos, vel, color)
+    def __init__(self, name, pos, vel, color, primary, deltav):
+        super().__init__(name, pos, vel, color, primary)
         self.deltav = deltav
         self.radius = 100
+
+    def calculate_primary(self, universe):
+        if np.linalg.norm(self.pos - self.primary.pos) > self.primary.hill:
+            self.primary = self.primary.primary
+        else:
+            for moon in self.primary.satellites:
+                if np.linalg.norm(self.pos - moon.pos) < moon.hill:
+                    self.primary = moon
 
 class Body(Entity):
     def __init__(self, name, pos, vel, color, mass, radius, primary):
@@ -75,6 +86,8 @@ class Body(Entity):
         self.radius = radius
         self.mass = mass
         self.SGP = mass*6.67430*10**-11
+        self.BGP = self.SGP
         self.satellites = []
+        self.satellite_table = np.array(5)
         self.deltav = False
-        self.trace_detail = 2000 #body radius, orbit radius, camera distance
+        self.hill = 1*10**20

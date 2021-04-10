@@ -17,10 +17,10 @@ def sn(datastr):
     return np.float64(datalist[0])*10**int(datalist[1])
 
 class Universe:
-    def __init__(self, focus):
+    def __init__(self, focus = 'Earth', profile = False, rate = 1):
         self.time = 1609419600
-        self.usertime = 3600.0 *2 #86400.0/2
-        self.profile = Profile()
+        self.usertime = rate #3600.0 *2 #86400.0/2
+        self.profile = Profile(profile)
         self.nodes = [Node(False, 32503680000)]
         self.tracecount = 0 #Need to modify this
         self.bodies = []
@@ -32,26 +32,47 @@ class Universe:
             for line in f.readlines()[1:]:
                 data = line.split()
                 primary = False
-                if len(self.bodies):
-                    for body in self.bodies:
-                        if body.name == str(data[1]):
-                            primary = body
 
-                newbody = Body(str(data[0]),
+                if data[1] == 'Vessel':
+                    newvessel = Vessel(str(data[0]),
                     np.array([sn(data[4]),sn(data[5]),sn(data[6])]) *1000,
                     np.array([sn(data[7]),sn(data[8]),sn(data[9])]) *1000,
                     np.array(data[10].split(","), dtype=np.ubyte),
-                    sn(data[2]),
-                    int(data[3]),
-                    primary)
+                    self.bodies[5],1000000)
 
-                self.bodies.append(newbody)
-                self.entities.append(newbody)
-                if newbody.name == focus:
-                    self.focus = self.entities.index(body)+1
-                if newbody.primary:
-                    newbody.primary.satellites.append(newbody)
-                    newbody.orbital_elements()
-                    newbody.trace = newbody.calculate_trace()
+                    self.vessels.append(newvessel)
+                    self.entities.append(newvessel)
+                    newvessel.orbital_elements()
+                    newvessel.trace = newvessel.calculate_trace()
+
+                else:
+                    if len(self.bodies):
+                        for body in self.bodies:
+                            if body.name == str(data[1]):
+                                primary = body
+
+                    newbody = Body(str(data[0]),
+                        np.array([sn(data[4]),sn(data[5]),sn(data[6])]) *1000,
+                        np.array([sn(data[7]),sn(data[8]),sn(data[9])]) *1000,
+                        np.array(data[10].split(","), dtype=np.ubyte),
+                        sn(data[2]),
+                        int(data[3]),
+                        primary)
+
+                    self.bodies.append(newbody)
+                    self.entities.append(newbody)
+                    if newbody.name == focus:
+                        self.focus = self.entities.index(body)+1
+                    if newbody.primary:
+                        newbody.primary.satellites.append(newbody)
+                        newbody.primary.BGP += newbody.SGP
+                        newbody.orbital_elements()
+                        newbody.trace = newbody.calculate_trace()
+                        newbody.hill = 1*newbody.semi_major_axis*((newbody.mass/(3*newbody.primary.mass))**(1/3))
 
         self.outerscale = np.linalg.norm(self.bodies[-1].pos-self.bodies[0].pos)/100
+        self.entitylength = len(self.entities)
+        self.barycentre_table = np.array(5)
+        subtract = self.entities[self.focus % self.entitylength].pos
+        for entity in self.entities:
+            entity.pos = entity.pos - subtract

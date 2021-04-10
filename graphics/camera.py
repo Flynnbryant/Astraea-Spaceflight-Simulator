@@ -35,11 +35,22 @@ class Camera:
         self.run_graphics = Functionality(self.user_interface)
         self.fps_display = pyglet.window.FPSDisplay(window=window)
 
+    def moveCamera(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glTranslatef(0, 0, 0)
+        gluPerspective(45, self.window_width/self.window_height, 0.000007, 2000.0)
+        glTranslatef(self.pos[0], self.pos[1], self.pos[2])
+        glRotatef(self.tilt, 0, 0, 1)
+        glRotatef(self.vertical_rot, 1, 0, 0)
+        glRotatef(self.horizontal_rot, 0, 1, 0)
+        glScalef(self.scale_factor, self.scale_factor, self.scale_factor)
+
     def drawPlanet(self, body):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glTranslatef(body.pos[0], body.pos[2], body.pos[1])
-        glColor3f(body.color[0]/255, body.color[1]/255, body.color[2]/255)
+        glColor3f(body.colorsmall[0], body.colorsmall[1], body.colorsmall[2])
         gluSphere(body.display_obj, body.radius, 64, 32)
 
     def drawTrace(self, entity, strength):
@@ -47,31 +58,18 @@ class Camera:
         glLoadIdentity()
         glColor3f(1, 1, 1)
         glLineWidth(entity.lineWidth)
-        glColor3f(entity.color[0]/(strength*255), entity.color[1]/(strength*255), entity.color[2]/(strength*255))
+        glColor3f(entity.colorsmall[0]/strength, entity.colorsmall[1]/strength, entity.colorsmall[2]/strength)
         glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, entity.update_trace())
+        glVertexPointer(3, GL_DOUBLE, 0, entity.update_trace())
         glDrawArrays(GL_LINE_LOOP, 0, entity.trace_detail)
         glDisableClientState(GL_VERTEX_ARRAY)
-
-    def moveCamera(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        glTranslatef(0, 0, 0)
-        gluPerspective(45, self.window_width/self.window_height, 0.00001, 2000.0)
-        glTranslatef(self.pos[0], self.pos[1], self.pos[2])
-        glRotatef(self.tilt, 0, 0, 1)
-        glRotatef(self.vertical_rot, 1, 0, 0)
-        glRotatef(self.horizontal_rot, 0, 1, 0)
-        glScalef(self.scale_factor, self.scale_factor, self.scale_factor)
-        glTranslatef(-self.focus_entity.pos[0], -self.focus_entity.pos[2], -self.focus_entity.pos[1])
 
     def drawEntityLabel(self, entity, strength):
         glDisable(GL_DEPTH_TEST)
         self.moveCamera()
 
-        projection_matrix = glGetFloatv(GL_PROJECTION_MATRIX)
         vec = np.array([entity.pos[0] + entity.radius*np.sin(np.radians(self.tilt)), entity.pos[2] + entity.radius*np.cos(np.radians(self.tilt)), entity.pos[1], 1])
-        b = np.dot(vec, projection_matrix)
+        b = np.dot(vec, glGetFloatv(GL_PROJECTION_MATRIX))
 
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -82,7 +80,7 @@ class Camera:
         y = b[1]/b[3]
         z = b[2]/b[3]
 
-        glColor3f(entity.color[0]/(255*strength), entity.color[1]/(255*strength), entity.color[2]/(255*strength))
+        glColor3f(entity.colorsmall[0]/strength, entity.colorsmall[1]/strength, entity.colorsmall[2]/strength)
         glBegin(GL_TRIANGLES)
         glVertex3f(x, y, z)
         glVertex3f(x-0.015, y+0.03, z)
@@ -90,7 +88,7 @@ class Camera:
         glEnd()
         gluOrtho2D(-self.window_width//2, self.window_width//2, -self.window_height//2, self.window_height//2)
 
-        if z < 1:
+        if z < 1: # Prevents labels from being drawn when they are behind the camera.
             label = pyglet.text.Label(
                 entity.name,
                 font_name='Arial',

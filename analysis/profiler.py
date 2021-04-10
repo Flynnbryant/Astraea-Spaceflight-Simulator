@@ -12,11 +12,11 @@ that total time each module used up, and will print that information.
 import time
 
 class Profile():
-    def __init__(self):
+    def __init__(self, display):
         self.total = 0
         self.frame_end = time.time()
         self.modules = []
-        self.display = False
+        self.display = display
 
     def add(self, name):
         self.modules.append([name, time.time()])

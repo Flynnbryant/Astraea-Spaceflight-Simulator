@@ -23,8 +23,11 @@ class Node:
         self.vessel = vessel
         self.time = time
 
+    def run(universe):
+        universe.nodes.pop(0)
+
 class Plan(Node):
-    def __init__(self, data):
+    def __init__(self, vessel, time, data):
         super().__init__(vessel, time)
         self.data = data
 
@@ -32,7 +35,7 @@ class Plan(Node):
         pass
 
 class Maneuver(Node):
-    def __init__(self, prograde, normal, radial):
+    def __init__(self, vessel, time, prograde, normal, radial):
         super().__init__(vessel, time)
         self.prograde = prograde
         self.normal = normal
@@ -44,10 +47,14 @@ class Maneuver(Node):
         radial(universe, self.vessel, self.radial)
 
 def prograde(universe, vessel, value):
-    pass
+    progradeVec = vessel.vel - vessel.primary.vel
+    vessel.vel += value*(progradeVec/np.linalg.norm(progradeVec))
 
 def normal(universe, vessel, value):
-    pass
+    progradeVec = vessel.vel - vessel.primary.vel
+    normalVec = np.cross(vessel.pos - vessel.primary.pos, progradeVec)
+    vessel.vel += value*(normalVec/np.linalg.norm(normalVec))
 
 def radial(unvierse, vessel, value):
-    pass
+    radialVec = vessel.pos - vessel.primary.pos
+    vessel.vel += value*(radialVec/np.linalg.norm(radialVec))
