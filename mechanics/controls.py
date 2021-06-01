@@ -17,9 +17,9 @@ def simulation_controls(universe, camera, window, keys):
         elif keys[pyglet.window.key.O]:
             universe.usertime *= 0.9
         if  keys[pyglet.window.key.EQUAL]:
-            camera.pos[2] = np.clip((camera.pos[2]*0.9001), -100, -max(camera.focus_entity.radius*camera.scale_factor*3,0.00001))
+            camera.pos[2] = np.clip((camera.pos[2]*0.9001), -100, -max(camera.focus_entity.radius*camera.scale_factor*3,0.00002))
         elif keys[pyglet.window.key.MINUS]:
-            camera.pos[2] = np.clip((camera.pos[2]*1.1001), -100, -max(camera.focus_entity.radius*camera.scale_factor*3,0.00001))
+            camera.pos[2] = np.clip((camera.pos[2]*1.1001), -100, -max(camera.focus_entity.radius*camera.scale_factor*3,0.00002))
         if keys[pyglet.window.key.UP] or keys[pyglet.window.key.W]:
             camera.vertical_rot += 2
             camera.vertical_rot = np.clip(camera.vertical_rot, -90, 90)
@@ -46,15 +46,15 @@ def simulation_controls(universe, camera, window, keys):
             camera.switch = False
 
         if keys[pyglet.window.key.H]:
-            prograde(universe, universe.vessels[0], universe.timestep)
+            prograde(universe, universe.vessels[0], 10*universe.timestep)
         elif keys[pyglet.window.key.N]:
-            prograde(universe, universe.vessels[0], -universe.timestep)
+            prograde(universe, universe.vessels[0], -10*universe.timestep)
         if keys[pyglet.window.key.I]:
-            normal(universe, universe.vessels[0], universe.timestep)
+            normal(universe, universe.vessels[0], 10*universe.timestep)
         elif keys[pyglet.window.key.K]:
-            normal(universe, universe.vessels[0], -universe.timestep)
+            normal(universe, universe.vessels[0], -10*universe.timestep)
         if keys[pyglet.window.key.L]:
-            radial(universe, universe.vessels[0], universe.timestep)
+            radial(universe, universe.vessels[0], 10*universe.timestep)
         elif keys[pyglet.window.key.J]:
-            radial(universe, universe.vessels[0], -universe.timestep)
+            radial(universe, universe.vessels[0], -10*universe.timestep)
     universe.profile.add('controls')

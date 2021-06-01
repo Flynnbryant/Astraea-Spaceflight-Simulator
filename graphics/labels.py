@@ -36,6 +36,6 @@ class Text():
         self.label_text.text = self.initial_text.replace('', new)
 
 def updateLabels(user_interface, verse):
-    user_interface.timestep_text.edit_text(str(round(verse.usertime,3)) + ' x time')
+    user_interface.timestep_text.edit_text('Time Rate: '+str(round(verse.usertime,3)) + 'x')
     #user_interface.periapsis_text.edit_text(str(round(verse.entities[verse.focus].periapsis)) + 'm')
     user_interface.time_text.edit_text(str(datetime.fromtimestamp(verse.time).strftime("%Y, %b %d, %H:%M:%S.%f"))[:-3] + ' UTC')

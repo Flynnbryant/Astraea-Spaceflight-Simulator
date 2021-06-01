@@ -5,7 +5,13 @@ no mass and can be controlled. Entities include both bodies and vessels.
 '''
 
 import numpy as np
+from PIL import Image
+from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
+from mechanics.simulation import *
+from graphics.textures import *
+from graphics.camera import *
 
 class Entity():
     lineWidth = 1
@@ -18,9 +24,11 @@ class Entity():
         self.color = np.array(color)
         self.colorsmall = self.color/255
         self.primary = primary
-        self.trace_detail = 2000
+        if self.primary == 'Sol':
+            self.trace_detail = 2000
+        else:
+            self.trace_detail = 500
 
-    # Wont be needed with metaclass instance iteration
     def remove(self, universe):
         universe.entities.remove(self)
         universe.entitylength -= 1
@@ -72,22 +80,52 @@ class Vessel(Entity):
         self.deltav = deltav
         self.radius = 100
 
-    def calculate_primary(self, universe):
-        if np.linalg.norm(self.pos - self.primary.pos) > self.primary.hill:
-            self.primary = self.primary.primary
-        else:
-            for moon in self.primary.satellites:
-                if np.linalg.norm(self.pos - moon.pos) < moon.hill:
-                    self.primary = moon
-
 class Body(Entity):
     def __init__(self, name, pos, vel, color, mass, radius, primary):
         super().__init__(name, pos, vel, color, primary)
         self.radius = radius
         self.mass = mass
         self.SGP = mass*6.67430*10**-11
-        self.BGP = self.SGP
+        self.barySGP = self.SGP
         self.satellites = []
         self.satellite_table = np.array(5)
         self.deltav = False
         self.hill = 1*10**20
+        #self.texture_id = self.read_texture('graphics/textures/jupiter_test.png')
+
+    def drawPlanet(self):
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glTranslatef(self.pos[0], self.pos[2], self.pos[1])
+        glColor3f(self.colorsmall[0], self.colorsmall[1], self.colorsmall[2])
+        gluSphere(self.display_obj, self.radius, 32, 16)
+
+    def drawPlanetTexture(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glPushMatrix()
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, self.texture_id)
+        glEnable(GL_TEXTURE_GEN_S)
+        glEnable(GL_TEXTURE_GEN_T)
+        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+        glutSolidSphere(self.radius, 50, 50)
+        glDisable(GL_TEXTURE_2D)
+        glPopMatrix()
+        glutSwapBuffers()
+
+    def read_texture(self, filename):
+        img = Image.open(filename)
+        img_data = np.array(list(img.getdata()), np.int8)
+        texture_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture_id)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+        return texture_id

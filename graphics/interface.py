@@ -28,11 +28,11 @@ class Functionality():
 class UserInterface():
     def __init__(self, window, screen):
         self.time_text = Text(batch_information,
-            [screen.width * 0.54, screen.height * -0.0],
+            [screen.width * -0.15, screen.height * 0.86],
             [screen.width * 0.5, screen.height * 0.1])
 
         self.timestep_text = Text(batch_information,
-            [screen.width * 0.77, screen.height * 0.05],
+            [screen.width * -0.07, screen.height * 0.83],
             [screen.width * 0.3, screen.height * 0.1])
 
         self.periapsis_text = Text(batch_information,
